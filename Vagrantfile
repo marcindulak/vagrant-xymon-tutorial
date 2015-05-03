@@ -71,7 +71,7 @@ SCRIPT
   # build xymon RPMS
   $xymon_build_rpms = <<SCRIPT
 XYMONVER=$1
-yum install -y gcc make fping wget rpm-build
+yum install -y gcc make wget rpm-build
 yum install -y pcre-devel openssl-devel openldap-devel rrdtool-devel
 yum install -y yp-tools  # FIXME - provides ypmatch
 yum install -y c-ares-devel  # FIXME - provides libcares.so
@@ -96,7 +96,7 @@ SCRIPT
   $xymon_build_deb = <<SCRIPT
 XYMONVER=$1
 apt-get update
-apt-get install -y rrdtool librrd-dev libpcre3-dev libssl-dev ldap-utils libldap2-dev fping
+apt-get install -y rrdtool librrd-dev libpcre3-dev libssl-dev ldap-utils libldap2-dev
 apt-get install -y dpkg-dev  # FIXME
 apt-get install -y libc-ares-dev  # FIXME
 wget http://sourceforge.net/projects/xymon/files/Xymon/${XYMONVER}/xymon-${XYMONVER}.tar.gz
