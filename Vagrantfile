@@ -77,17 +77,19 @@ yum install -y yp-tools  # FIXME - provides ypmatch
 yum install -y c-ares-devel  # FIXME - provides libcares.so
 wget http://sourceforge.net/projects/xymon/files/Xymon/${XYMONVER}/xymon-${XYMONVER}.tar.gz
 tar zxf xymon-${XYMONVER}.tar.gz
-cd xymon-${XYMONVER}/rpm
-sed -i "s/@VER@/${XYMONVER}/" xymon.spec
-ln -s ../../xymon-${XYMONVER}.tar.gz .
-rpmbuild -bb --define "_sourcedir $PWD" xymon.spec
+cd xymon-${XYMONVER}
+sh ./build/makerpm.sh ${XYMONVER}
 SCRIPT
   $xymon_configure_local_rpms_repo = <<SCRIPT
+XYMONVER=$1
 yum clean all
-cat <<'END' > /etc/yum.repos.d/xymon.repo
+yum -y install createrepo
+rpmbuild=`readlink -f ~vagrant/xymon-${XYMONVER}/rpmbuild/RPMS`
+createrepo ${rpmbuild}
+cat <<END > /etc/yum.repos.d/xymon.repo
 [xymon]
 name=CentOS-$releasever - Xymon locally built RPMS
-baseurl=file:///root/rpmbuild/RPMS
+baseurl=file://${rpmbuild}
 enabled=1
 gpgcheck=0
 END
@@ -124,9 +126,10 @@ SCRIPT
       s.inline = $xymon_build_rpms
       s.args   = XYMONVER
     end
-    rhel6.vm.provision :shell, :inline => "yum -y install createrepo"
-    rhel6.vm.provision :shell, :inline => "cd /root/rpmbuild/RPMS; createrepo `pwd`"
-    rhel6.vm.provision :shell, :inline => $xymon_configure_local_rpms_repo
+    rhel6.vm.provision "shell" do |s|
+      s.inline = $xymon_configure_local_rpms_repo
+      s.args   = XYMONVER
+    end
     rhel6.vm.provision :shell, :inline => "yum install -y xymon-client"
     rhel6.vm.provision :shell, :inline => "chkconfig --add xymon-client"
     rhel6.vm.provision :shell, :inline => "sed -i 's/XYMONSERVERS=.*/XYMONSERVERS=\"bbserver\"/' /etc/default/xymon-client"
@@ -142,9 +145,10 @@ SCRIPT
       s.inline = $xymon_build_rpms
       s.args   = XYMONVER
     end
-    rhel7.vm.provision :shell, :inline => "yum -y install createrepo"
-    rhel7.vm.provision :shell, :inline => "cd /root/rpmbuild/RPMS; createrepo `pwd`"
-    rhel7.vm.provision :shell, :inline => $xymon_configure_local_rpms_repo
+    rhel7.vm.provision "shell" do |s|
+      s.inline = $xymon_configure_local_rpms_repo
+      s.args   = XYMONVER
+    end
     rhel7.vm.provision :shell, :inline => "yum install -y xymon-client"
     rhel7.vm.provision :shell, :inline => "chkconfig --add xymon-client"
     rhel7.vm.provision :shell, :inline => "sed -i 's/XYMONSERVERS=.*/XYMONSERVERS=\"bbserver\"/' /etc/default/xymon-client"
@@ -181,9 +185,10 @@ SCRIPT
       s.inline = $xymon_build_rpms
       s.args   = XYMONVER
     end
-    bbserver.vm.provision :shell, :inline => "yum -y install createrepo"
-    bbserver.vm.provision :shell, :inline => "cd /root/rpmbuild/RPMS; createrepo `pwd`"
-    bbserver.vm.provision :shell, :inline => $xymon_configure_local_rpms_repo
+    bbserver.vm.provision "shell" do |s|
+      s.inline = $xymon_configure_local_rpms_repo
+      s.args   = XYMONVER
+    end
     bbserver.vm.provision :shell, :inline => "yum install -y httpd"
     bbserver.vm.provision :shell, :inline => "yum install -y xymon"
     bbserver.vm.provision :shell, :inline => "htpasswd -b -c /etc/xymon/xymonpasswd xymon xymon"
