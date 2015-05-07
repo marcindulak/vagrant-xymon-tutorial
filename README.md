@@ -4,9 +4,10 @@ Description
 
 Vagrantfile that builds from source,
 installs and configures Xymon server and clients.
-The server runs on CentOS6, clients can run on Debian(Ubuntu), CentOS(Fedora).
+The server runs on CentOS6, clients can run on Debian(Ubuntu), CentOS(Fedora),
+Windows (http://bbwin.sourceforge.net/).
 
-Tested on: Ubuntu 14.04, CentOS 6/7.
+Tested on: Ubuntu 14.04, CentOS 6/7, Windows Server 2012 R2.
 
 ------------
 Sample Usage
@@ -21,7 +22,7 @@ test the module with::
         $ vagrant up
         $ firefox http://localhost:8080/xymon/  # Note the final slash!
 
-You should see the following Xymon setup:
+You should see a Xymon setup similar to this one:
 
 ![Xymon](https://raw.github.com/marcindulak/vagrant-xymon-tutorial/master/screenshots/xymon.png)
 
@@ -66,5 +67,4 @@ BSD 2-clause
 Todo
 ----
 
-1. use a "real" configuration management software for Xymon configuration instead of sed ...
-2. setup Apache password protection
+1. setup Apache password protection on the Xymon server

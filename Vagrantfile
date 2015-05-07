@@ -3,6 +3,11 @@
 
 XYMONVER="4.3.19"
 
+# http://stackoverflow.com/questions/23926945/specify-headless-or-gui-from-command-line
+def gui_enabled?
+  !ENV.fetch('GUI', '').empty?
+end
+
 Vagrant.configure(2) do |config|
   # centos6 (32-bit) client
   config.vm.define "centos6" do |centos6|
@@ -34,6 +39,22 @@ Vagrant.configure(2) do |config|
       v.cpus = 1
     end
   end
+  # windows
+  config.vm.define "windows" do |windows|
+    # the http://aka.ms/vagrant-win boxes hang for me ...
+    windows.vm.box = "opentable/win-2012r2-standard-amd64-nocm"
+    windows.vm.box_url = "opentable/win-2012r2-standard-amd64-nocm"
+    windows.vm.network "private_network", ip: "192.168.0.40"
+    windows.vm.network "forwarded_port", guest: 5985, host: 55985, id: "winrm", auto_correct: true
+    windows.vm.provider 'virtualbox' do |v|
+      v.gui = gui_enabled?
+    end
+    windows.vm.provider "virtualbox" do |v|
+      v.memory = 256  # Windows is greedy
+      v.cpus = 1
+    end
+    windows.ssh.shell = "powershell"
+  end
   # bbserver
   config.vm.define "bbserver" do |bbserver|
     bbserver.vm.box = "puppetlabs/centos-6.6-64-nocm"
@@ -60,6 +81,7 @@ cat <<END >> /etc/hosts
 192.168.0.10 centos6
 192.168.0.20 centos7
 192.168.0.30 ubuntu14
+192.168.0.40 windows
 END
 SCRIPT
   $epel6 = <<SCRIPT
@@ -175,6 +197,21 @@ SCRIPT
     ubuntu14.vm.provision :shell, :inline => "service xymon-client start"
     ubuntu14.vm.provision :shell, :inline => "update-rc.d xymon-client defaults"
   end
+  config.vm.define "windows" do |windows|
+    # install chocolatey
+    windows.vm.provision :shell, :inline => 'powershell -NoProfile -ExecutionPolicy unrestricted -Command "iex ((new-object net.webclient).DownloadString(\'https://chocolatey.org/install.ps1\'))"'
+    windows.vm.provision :shell, :inline => "choco install --force -y wget"
+    windows.vm.provision :shell, :inline => "choco install --force -y devbox-sed"
+    windows.vm.provision :shell, :inline => "cmd /c 'wget --no-check-certificate http://downloads.sourceforge.net/project/bbwin/bbwin/0.13/BBWin_0.13.msi -O c:\\users\\vagrant\\BBWin_0.13.msi'"
+    windows.vm.provision :shell, :inline => "cmd /c 'msiexec /i c:\\users\\vagrant\\BBWin_0.13.msi /quiet'"
+    # monitor host-specific data with BBwin
+    # https://puppetmon.googlecode.com/git/clients/windows/xymon32/Doc/en/ServiceConfiguration.htm
+    windows.vm.provision :shell, :inline => "sed -i 's#yourfirstbbdisplay#192.168.0.5#' 'c:\\Program Files (x86)\\BBWin\\etc\\BBWin.cfg'"
+    windows.vm.provision :shell, :inline => "Set-Service BBWin -StartupType Automatic"
+    windows.vm.provision :shell, :inline => "Rename-Computer -NewName windows -Restart"
+    windows.vm.provision :shell, :inline => "Get-WmiObject Win32_ComputerSystem"
+    windows.vm.provision :shell, :inline => "NetSh Advfirewall set allprofiles state off"
+  end
   # last provision bbserver
   config.vm.define "bbserver" do |bbserver|
     bbserver.vm.provision :shell, :inline => "hostname bbserver", run: "always"
@@ -191,6 +228,7 @@ SCRIPT
     end
     bbserver.vm.provision :shell, :inline => "yum install -y httpd"
     bbserver.vm.provision :shell, :inline => "yum install -y xymon"
+    # one would have to setup https for xymonpasswd to work ...
     bbserver.vm.provision :shell, :inline => "htpasswd -b -c /etc/xymon/xymonpasswd xymon xymon"
     bbserver.vm.provision :shell, :inline => "chown apache.apache /etc/xymon/xymonpasswd"
     bbserver.vm.provision :shell, :inline => "chmod 700 /etc/xymon/xymonpasswd"
@@ -198,6 +236,7 @@ SCRIPT
     bbserver.vm.provision :shell, :inline => "echo '192.168.0.10   centos6      # ssh http://centos6' >> /etc/xymon/hosts.cfg"
     bbserver.vm.provision :shell, :inline => "echo '192.168.0.20   centos7      # ssh' >> /etc/xymon/hosts.cfg"
     bbserver.vm.provision :shell, :inline => "echo '192.168.0.30   ubuntu14      # ssh' >> /etc/xymon/hosts.cfg"
+    bbserver.vm.provision :shell, :inline => "echo '192.168.0.40   windows      # ssh' >> /etc/xymon/hosts.cfg"
     bbserver.vm.provision :shell, :inline => "service xymon start"
     bbserver.vm.provision :shell, :inline => "chkconfig xymon on"
     bbserver.vm.provision :shell, :inline => "service httpd start"
