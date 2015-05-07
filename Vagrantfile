@@ -4,22 +4,22 @@
 XYMONVER="4.3.19"
 
 Vagrant.configure(2) do |config|
-  # rhel6 (32-bit) client
-  config.vm.define "rhel6" do |rhel6|
-    rhel6.vm.box = "puppetlabs/centos-6.6-32-nocm"
-    rhel6.vm.box_url = 'puppetlabs/centos-6.6-32-nocm'
-    rhel6.vm.network "private_network", ip: "192.168.0.10"
-    rhel6.vm.provider "virtualbox" do |v|
+  # centos6 (32-bit) client
+  config.vm.define "centos6" do |centos6|
+    centos6.vm.box = "puppetlabs/centos-6.6-32-nocm"
+    centos6.vm.box_url = 'puppetlabs/centos-6.6-32-nocm'
+    centos6.vm.network "private_network", ip: "192.168.0.10"
+    centos6.vm.provider "virtualbox" do |v|
       v.memory = 128
       v.cpus = 1
     end
   end
-  # rhel7 client
-  config.vm.define "rhel7" do |rhel7|
-    rhel7.vm.box = "puppetlabs/centos-7.0-64-nocm"
-    rhel7.vm.box_url = 'puppetlabs/centos-7.0-64-nocm'
-    rhel7.vm.network "private_network", ip: "192.168.0.20"
-    rhel7.vm.provider "virtualbox" do |v|
+  # centos7 client
+  config.vm.define "centos7" do |centos7|
+    centos7.vm.box = "puppetlabs/centos-7.0-64-nocm"
+    centos7.vm.box_url = 'puppetlabs/centos-7.0-64-nocm'
+    centos7.vm.network "private_network", ip: "192.168.0.20"
+    centos7.vm.provider "virtualbox" do |v|
       v.memory = 128
       v.cpus = 1
     end
@@ -57,8 +57,8 @@ SCRIPT
   $etc_hosts = <<SCRIPT
 cat <<END >> /etc/hosts
 192.168.0.5 bbserver
-192.168.0.10 rhel6
-192.168.0.20 rhel7
+192.168.0.10 centos6
+192.168.0.20 centos7
 192.168.0.30 ubuntu14
 END
 SCRIPT
@@ -73,7 +73,7 @@ SCRIPT
 XYMONVER=$1
 yum install -y gcc make wget rpm-build
 yum install -y pcre-devel openssl-devel openldap-devel rrdtool-devel
-yum install -y yp-tools  # FIXME - provides ypmatch
+#yum install -y yp-tools  # FIXME - provides ypmatch required by xymon-4.3.19/configure.client
 yum install -y c-ares-devel  # FIXME - provides libcares.so
 wget http://sourceforge.net/projects/xymon/files/Xymon/${XYMONVER}/xymon-${XYMONVER}.tar.gz
 tar zxf xymon-${XYMONVER}.tar.gz
@@ -117,43 +117,43 @@ echo "deb file:${debbuild} /" > /etc/apt/sources.list.d/xymon.list
 apt-get update
 SCRIPT
   # the actual provisions of machines
-  config.vm.define "rhel6" do |rhel6|
-    rhel6.vm.provision :shell, :inline => "hostname rhel6", run: "always"
-    rhel6.vm.provision :shell, :inline => $etc_hosts
-    rhel6.vm.provision :shell, :inline => $epel6
-    rhel6.vm.provision :shell, :inline => $service_iptables_stop, run: "always"
-    rhel6.vm.provision "shell" do |s|
+  config.vm.define "centos6" do |centos6|
+    centos6.vm.provision :shell, :inline => "hostname centos6", run: "always"
+    centos6.vm.provision :shell, :inline => $etc_hosts
+    centos6.vm.provision :shell, :inline => $epel6
+    centos6.vm.provision :shell, :inline => $service_iptables_stop, run: "always"
+    centos6.vm.provision "shell" do |s|
       s.inline = $xymon_build_rpms
       s.args   = XYMONVER
     end
-    rhel6.vm.provision "shell" do |s|
+    centos6.vm.provision "shell" do |s|
       s.inline = $xymon_configure_local_rpms_repo
       s.args   = XYMONVER
     end
-    rhel6.vm.provision :shell, :inline => "yum install -y xymon-client"
-    rhel6.vm.provision :shell, :inline => "chkconfig --add xymon-client"
-    rhel6.vm.provision :shell, :inline => "sed -i 's/XYMONSERVERS=.*/XYMONSERVERS=\"bbserver\"/' /etc/default/xymon-client"
-    rhel6.vm.provision :shell, :inline => "service xymon-client start"
-    rhel6.vm.provision :shell, :inline => "chkconfig xymon-client on"
+    centos6.vm.provision :shell, :inline => "yum install -y xymon-client"
+    centos6.vm.provision :shell, :inline => "chkconfig --add xymon-client"
+    centos6.vm.provision :shell, :inline => "sed -i 's/XYMONSERVERS=.*/XYMONSERVERS=\"bbserver\"/' /etc/default/xymon-client"
+    centos6.vm.provision :shell, :inline => "service xymon-client start"
+    centos6.vm.provision :shell, :inline => "chkconfig xymon-client on"
   end
-  config.vm.define "rhel7" do |rhel7|
-    rhel7.vm.provision :shell, :inline => "hostname rhel7", run: "always"
-    rhel7.vm.provision :shell, :inline => $etc_hosts
-    rhel7.vm.provision :shell, :inline => $epel7
-    rhel7.vm.provision :shell, :inline => $systemctl_stop_firewalld, run: "always"
-    rhel7.vm.provision "shell" do |s|
+  config.vm.define "centos7" do |centos7|
+    centos7.vm.provision :shell, :inline => "hostname centos7", run: "always"
+    centos7.vm.provision :shell, :inline => $etc_hosts
+    centos7.vm.provision :shell, :inline => $epel7
+    centos7.vm.provision :shell, :inline => $systemctl_stop_firewalld, run: "always"
+    centos7.vm.provision "shell" do |s|
       s.inline = $xymon_build_rpms
       s.args   = XYMONVER
     end
-    rhel7.vm.provision "shell" do |s|
+    centos7.vm.provision "shell" do |s|
       s.inline = $xymon_configure_local_rpms_repo
       s.args   = XYMONVER
     end
-    rhel7.vm.provision :shell, :inline => "yum install -y xymon-client"
-    rhel7.vm.provision :shell, :inline => "chkconfig --add xymon-client"
-    rhel7.vm.provision :shell, :inline => "sed -i 's/XYMONSERVERS=.*/XYMONSERVERS=\"bbserver\"/' /etc/default/xymon-client"
-    rhel7.vm.provision :shell, :inline => "service xymon-client start"
-    rhel7.vm.provision :shell, :inline => "chkconfig xymon-client on"
+    centos7.vm.provision :shell, :inline => "yum install -y xymon-client"
+    centos7.vm.provision :shell, :inline => "chkconfig --add xymon-client"
+    centos7.vm.provision :shell, :inline => "sed -i 's/XYMONSERVERS=.*/XYMONSERVERS=\"bbserver\"/' /etc/default/xymon-client"
+    centos7.vm.provision :shell, :inline => "service xymon-client start"
+    centos7.vm.provision :shell, :inline => "chkconfig xymon-client on"
   end
   config.vm.define "ubuntu14" do |ubuntu14|
     ubuntu14.vm.provision :shell, :inline => "hostname ubuntu14", run: "always"
@@ -195,8 +195,8 @@ SCRIPT
     bbserver.vm.provision :shell, :inline => "chown apache.apache /etc/xymon/xymonpasswd"
     bbserver.vm.provision :shell, :inline => "chmod 700 /etc/xymon/xymonpasswd"
     bbserver.vm.provision :shell, :inline => "chkconfig --add xymon"
-    bbserver.vm.provision :shell, :inline => "echo '192.168.0.10   rhel6      # ssh http://rhel6' >> /etc/xymon/hosts.cfg"
-    bbserver.vm.provision :shell, :inline => "echo '192.168.0.20   rhel7      # ssh' >> /etc/xymon/hosts.cfg"
+    bbserver.vm.provision :shell, :inline => "echo '192.168.0.10   centos6      # ssh http://centos6' >> /etc/xymon/hosts.cfg"
+    bbserver.vm.provision :shell, :inline => "echo '192.168.0.20   centos7      # ssh' >> /etc/xymon/hosts.cfg"
     bbserver.vm.provision :shell, :inline => "echo '192.168.0.30   ubuntu14      # ssh' >> /etc/xymon/hosts.cfg"
     bbserver.vm.provision :shell, :inline => "service xymon start"
     bbserver.vm.provision :shell, :inline => "chkconfig xymon on"
