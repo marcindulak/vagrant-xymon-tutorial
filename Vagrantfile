@@ -1,7 +1,7 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-XYMONVER="4.3.19"
+XYMONVER="4.3.21"
 
 # http://stackoverflow.com/questions/23926945/specify-headless-or-gui-from-command-line
 def gui_enabled?
