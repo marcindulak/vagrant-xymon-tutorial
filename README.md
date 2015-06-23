@@ -20,7 +20,8 @@ test the module with::
         $ git clone https://github.com/marcindulak/vagrant-xymon-tutorial.git
         $ cd vagrant-xymon-tutorial
         $ vagrant up
-        $ firefox http://localhost:8080/xymon/  # Note the final slash!
+        $ curl --insecure --user Xymon:Xymon https://localhost:8443/xymon/ # Note the final slash!
+        $ firefox https://localhost:8443/xymon/  # credentials: Xymon:Xymon
 
 You should see a Xymon setup similar to this one:
 
@@ -67,4 +68,3 @@ BSD 2-clause
 Todo
 ----
 
-1. setup Apache password protection on the Xymon server

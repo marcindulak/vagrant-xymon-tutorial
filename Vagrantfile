@@ -61,11 +61,18 @@ Vagrant.configure(2) do |config|
     bbserver.vm.box_url = 'puppetlabs/centos-6.6-64-nocm'
     bbserver.vm.network "private_network", ip: "192.168.0.5"
     bbserver.vm.network "forwarded_port", guest: 80, host: 8080
+    bbserver.vm.network "forwarded_port", guest: 443, host: 8443
     bbserver.vm.provider "virtualbox" do |v|
-      v.memory = 128
+      v.memory = 256  # augtool is greedy
       v.cpus = 1
     end
   end
+  # disable IPv6 on Linux
+  $linux_disable_ipv6 = <<SCRIPT
+sysctl -w net.ipv6.conf.default.disable_ipv6=1
+sysctl -w net.ipv6.conf.all.disable_ipv6=1
+sysctl -w net.ipv6.conf.lo.disable_ipv6=1
+SCRIPT
   # stop iptables
   $service_iptables_stop = <<SCRIPT
 service iptables stop
@@ -91,7 +98,7 @@ SCRIPT
 yum -y install http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm
 SCRIPT
   # build xymon RPMS
-  $xymon_build_rpms = <<SCRIPT
+  $xymon_make_rpm = <<SCRIPT
 XYMONVER=$1
 yum install -y gcc make wget rpm-build
 yum install -y pcre-devel openssl-devel openldap-devel rrdtool-devel
@@ -138,6 +145,31 @@ dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz
 echo "deb file:${debbuild} /" > /etc/apt/sources.list.d/xymon.list
 apt-get update
 SCRIPT
+  # enable https
+  $xymon_https_configure = <<SCRIPT
+cat <<'END' >> /etc/xymon/https.aug
+# http://lists.xymon.com/archive/2005-April/001593.html
+set /files/etc/httpd/conf.d/xymon-apache.conf/Directory[1]/directive[last()+1] AuthUserFile
+set /files/etc/httpd/conf.d/xymon-apache.conf/Directory[1]/directive[last()]/arg /etc/xymon/xymonpasswd
+set /files/etc/httpd/conf.d/xymon-apache.conf/Directory[1]/directive[last()+1] AuthType
+set /files/etc/httpd/conf.d/xymon-apache.conf/Directory[1]/directive[last()]/arg Basic
+set /files/etc/httpd/conf.d/xymon-apache.conf/Directory[1]/directive[last()+1] AuthName
+set /files/etc/httpd/conf.d/xymon-apache.conf/Directory[1]/directive[last()]/arg "\\\"Xymon Administration\\\""
+set /files/etc/httpd/conf.d/xymon-apache.conf/Directory[1]/directive[last()+1] Require
+set /files/etc/httpd/conf.d/xymon-apache.conf/Directory[1]/directive[last()]/arg valid-user
+#
+set /files/etc/httpd/conf.d/xymon-apache.conf/Directory[2]/directive[last()+1] AuthUserFile
+set /files/etc/httpd/conf.d/xymon-apache.conf/Directory[2]/directive[last()]/arg /etc/xymon/xymonpasswd
+set /files/etc/httpd/conf.d/xymon-apache.conf/Directory[2]/directive[last()+1] AuthType
+set /files/etc/httpd/conf.d/xymon-apache.conf/Directory[2]/directive[last()]/arg Basic
+set /files/etc/httpd/conf.d/xymon-apache.conf/Directory[2]/directive[last()+1] AuthName
+set /files/etc/httpd/conf.d/xymon-apache.conf/Directory[2]/directive[last()]/arg "\\\"Xymon Administration\\\""
+set /files/etc/httpd/conf.d/xymon-apache.conf/Directory[2]/directive[last()+1] Require
+set /files/etc/httpd/conf.d/xymon-apache.conf/Directory[2]/directive[last()]/arg valid-user
+save
+END
+augtool -f /etc/xymon/https.aug
+SCRIPT
   # the actual provisions of machines
   config.vm.define "centos6" do |centos6|
     centos6.vm.provision :shell, :inline => "hostname centos6", run: "always"
@@ -145,7 +177,7 @@ SCRIPT
     centos6.vm.provision :shell, :inline => $epel6
     centos6.vm.provision :shell, :inline => $service_iptables_stop, run: "always"
     centos6.vm.provision "shell" do |s|
-      s.inline = $xymon_build_rpms
+      s.inline = $xymon_make_rpm
       s.args   = XYMONVER
     end
     centos6.vm.provision "shell" do |s|
@@ -164,7 +196,7 @@ SCRIPT
     centos7.vm.provision :shell, :inline => $epel7
     centos7.vm.provision :shell, :inline => $systemctl_stop_firewalld, run: "always"
     centos7.vm.provision "shell" do |s|
-      s.inline = $xymon_build_rpms
+      s.inline = $xymon_make_rpm
       s.args   = XYMONVER
     end
     centos7.vm.provision "shell" do |s|
@@ -217,21 +249,27 @@ SCRIPT
     bbserver.vm.provision :shell, :inline => "hostname bbserver", run: "always"
     bbserver.vm.provision :shell, :inline => $etc_hosts
     bbserver.vm.provision :shell, :inline => $epel6
+    bbserver.vm.provision :shell, :inline => $linux_disable_ipv6, run: "always"
     bbserver.vm.provision :shell, :inline => $service_iptables_stop, run: "always"
     bbserver.vm.provision "shell" do |s|
-      s.inline = $xymon_build_rpms
+      s.inline = $xymon_make_rpm
       s.args   = XYMONVER
     end
     bbserver.vm.provision "shell" do |s|
       s.inline = $xymon_configure_local_rpms_repo
       s.args   = XYMONVER
     end
-    bbserver.vm.provision :shell, :inline => "yum install -y httpd"
+    bbserver.vm.provision :shell, :inline => "yum install -y httpd mod_ssl"
     bbserver.vm.provision :shell, :inline => "yum install -y xymon"
-    # one would have to setup https for xymonpasswd to work ...
-    bbserver.vm.provision :shell, :inline => "htpasswd -b -c /etc/xymon/xymonpasswd xymon xymon"
+    # configure xymon for https with augeas
+    # for http - comment out the steps below and forward port 80 to the Vagrant host
+    bbserver.vm.provision :shell, :inline => "yum install -y augeas"
+    bbserver.vm.provision :shell, :inline => "htpasswd -b -c /etc/xymon/xymonpasswd Xymon Xymon"
     bbserver.vm.provision :shell, :inline => "chown apache.apache /etc/xymon/xymonpasswd"
     bbserver.vm.provision :shell, :inline => "chmod 700 /etc/xymon/xymonpasswd"
+    bbserver.vm.provision :shell, :inline => "iptables -A INPUT -m state --state NEW -m tcp -p tcp --dport 80 -j REJECT"
+    bbserver.vm.provision :shell, :inline => $xymon_https_configure
+    # end of: configure xymon for https with augeas
     bbserver.vm.provision :shell, :inline => "chkconfig --add xymon"
     bbserver.vm.provision :shell, :inline => "echo '192.168.0.10   centos6      # ssh http://centos6' >> /etc/xymon/hosts.cfg"
     bbserver.vm.provision :shell, :inline => "echo '192.168.0.20   centos7      # ssh' >> /etc/xymon/hosts.cfg"
