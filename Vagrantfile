@@ -1,7 +1,7 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-XYMONVER="4.3.21"
+XYMONVER="4.3.27"
 
 # http://stackoverflow.com/questions/23926945/specify-headless-or-gui-from-command-line
 def gui_enabled?
@@ -230,15 +230,11 @@ SCRIPT
     ubuntu14.vm.provision :shell, :inline => "update-rc.d xymon-client defaults"
   end
   config.vm.define "windows" do |windows|
-    # install chocolatey
-    windows.vm.provision :shell, :inline => 'powershell -NoProfile -ExecutionPolicy unrestricted -Command "iex ((new-object net.webclient).DownloadString(\'https://chocolatey.org/install.ps1\'))"'
-    windows.vm.provision :shell, :inline => "choco install --force -y wget"
-    windows.vm.provision :shell, :inline => "choco install --force -y devbox-sed"
-    windows.vm.provision :shell, :inline => "cmd /c 'wget --no-check-certificate http://downloads.sourceforge.net/project/bbwin/bbwin/0.13/BBWin_0.13.msi -O c:\\users\\vagrant\\BBWin_0.13.msi'"
+    windows.vm.provision :shell, :inline => "(new-object System.Net.WebClient).DownloadFile('http://downloads.sourceforge.net/project/bbwin/bbwin/0.13/BBWin_0.13.msi','c:\\users\\vagrant\\BBWin_0.13.msi')"
     windows.vm.provision :shell, :inline => "cmd /c 'msiexec /i c:\\users\\vagrant\\BBWin_0.13.msi /quiet'"
     # monitor host-specific data with BBwin
     # https://puppetmon.googlecode.com/git/clients/windows/xymon32/Doc/en/ServiceConfiguration.htm
-    windows.vm.provision :shell, :inline => "sed -i 's#yourfirstbbdisplay#192.168.0.5#' 'c:\\Program Files (x86)\\BBWin\\etc\\BBWin.cfg'"
+    windows.vm.provision :shell, :inline => "(Get-Content 'c:\\Program Files (x86)\\BBWin\\etc\\BBWin.cfg') -replace 'yourfirstbbdisplay', '192.168.0.5' | Set-Content 'c:\\Program Files (x86)\\BBWin\\etc\\BBWin.cfg'"
     windows.vm.provision :shell, :inline => "Set-Service BBWin -StartupType Automatic"
     windows.vm.provision :shell, :inline => "Rename-Computer -NewName windows -Restart"
     windows.vm.provision :shell, :inline => "Get-WmiObject Win32_ComputerSystem"
