@@ -1,7 +1,7 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-XYMONVER="4.3.27"
+XYMONVER='4.3.28'
 
 # http://stackoverflow.com/questions/23926945/specify-headless-or-gui-from-command-line
 def gui_enabled?
@@ -10,59 +10,60 @@ end
 
 Vagrant.configure(2) do |config|
   # centos6 (32-bit) client
-  config.vm.define "centos6" do |centos6|
-    centos6.vm.box = "puppetlabs/centos-6.6-32-nocm"
-    centos6.vm.box_url = 'puppetlabs/centos-6.6-32-nocm'
-    centos6.vm.network "private_network", ip: "192.168.0.10"
-    centos6.vm.provider "virtualbox" do |v|
+  config.vm.define 'centos6' do |centos6|
+    centos6.vm.box = 'puppetlabs/centos-6.6-32-nocm'
+    centos6.vm.box_url = centos6.vm.box
+    centos6.vm.network 'private_network', ip: '192.168.0.10'
+    centos6.vm.provider 'virtualbox' do |v|
       v.memory = 128
       v.cpus = 1
     end
   end
   # centos7 client
-  config.vm.define "centos7" do |centos7|
-    centos7.vm.box = "puppetlabs/centos-7.0-64-nocm"
-    centos7.vm.box_url = 'puppetlabs/centos-7.0-64-nocm'
-    centos7.vm.network "private_network", ip: "192.168.0.20"
-    centos7.vm.provider "virtualbox" do |v|
+  config.vm.define 'centos7' do |centos7|
+    centos7.vm.box = 'puppetlabs/centos-7.0-64-nocm'
+    centos7.vm.box_url = centos7.vm.box
+    centos7.vm.network 'private_network', ip: '192.168.0.20'
+    centos7.vm.provider 'virtualbox' do |v|
       v.memory = 128
       v.cpus = 1
     end
   end
   # ubuntu client
-  config.vm.define "ubuntu14" do |ubuntu14|
-    ubuntu14.vm.box = "puppetlabs/ubuntu-14.04-64-nocm"
-    ubuntu14.vm.box_url = 'puppetlabs/ubuntu-14.04-64-nocm'
-    ubuntu14.vm.network "private_network", ip: "192.168.0.30"
-    ubuntu14.vm.provider "virtualbox" do |v|
+  config.vm.define 'ubuntu14' do |ubuntu14|
+    ubuntu14.vm.box = 'puppetlabs/ubuntu-14.04-64-nocm'
+    ubuntu14.vm.box_url = ubuntu14.vm.box
+    ubuntu14.vm.network 'private_network', ip: '192.168.0.30'
+    ubuntu14.vm.provider 'virtualbox' do |v|
       v.memory = 128
       v.cpus = 1
     end
   end
   # windows
-  config.vm.define "windows" do |windows|
+  config.vm.define 'windows' do |windows|
     # the http://aka.ms/vagrant-win boxes hang for me ...
-    windows.vm.box = "opentable/win-2012r2-standard-amd64-nocm"
-    windows.vm.box_url = "opentable/win-2012r2-standard-amd64-nocm"
-    windows.vm.network "private_network", ip: "192.168.0.40"
-    windows.vm.network "forwarded_port", guest: 5985, host: 55985, id: "winrm", auto_correct: true
+    windows.vm.box = 'gusztavvargadr/w16s'
+    windows.vm.box = windows.vm.box
+    windows.vm.box_url = 'opentable/win-2012r2-standard-amd64-nocm'
+    windows.vm.network 'private_network', ip: '192.168.0.40'
+    windows.vm.network 'forwarded_port', guest: 5985, host: 55985, id: 'winrm', auto_correct: true
     windows.vm.provider 'virtualbox' do |v|
       v.gui = gui_enabled?
     end
-    windows.vm.provider "virtualbox" do |v|
+    windows.vm.provider 'virtualbox' do |v|
       v.memory = 256  # Windows is greedy
       v.cpus = 1
     end
-    windows.ssh.shell = "powershell"
+    windows.ssh.shell = 'powershell'
   end
   # bbserver
-  config.vm.define "bbserver" do |bbserver|
-    bbserver.vm.box = "puppetlabs/centos-6.6-64-nocm"
-    bbserver.vm.box_url = 'puppetlabs/centos-6.6-64-nocm'
-    bbserver.vm.network "private_network", ip: "192.168.0.5"
-    bbserver.vm.network "forwarded_port", guest: 80, host: 8080
-    bbserver.vm.network "forwarded_port", guest: 443, host: 8443
-    bbserver.vm.provider "virtualbox" do |v|
+  config.vm.define 'bbserver' do |bbserver|
+    bbserver.vm.box = 'puppetlabs/centos-6.6-64-nocm'
+    bbserver.vm.box_url = bbserver.vm.box
+    bbserver.vm.network 'private_network', ip: '192.168.0.5'
+    bbserver.vm.network 'forwarded_port', guest: 80, host: 8080
+    bbserver.vm.network 'forwarded_port', guest: 443, host: 8443
+    bbserver.vm.provider 'virtualbox' do |v|
       v.memory = 256  # augtool is greedy
       v.cpus = 1
     end
@@ -171,109 +172,109 @@ END
 augtool -f /etc/xymon/https.aug
 SCRIPT
   # the actual provisions of machines
-  config.vm.define "centos6" do |centos6|
-    centos6.vm.provision :shell, :inline => "hostname centos6", run: "always"
+  config.vm.define 'centos6' do |centos6|
+    centos6.vm.provision :shell, :inline => 'hostname centos6', run: 'always'
     centos6.vm.provision :shell, :inline => $etc_hosts
     centos6.vm.provision :shell, :inline => $epel6
-    centos6.vm.provision :shell, :inline => $service_iptables_stop, run: "always"
-    centos6.vm.provision "shell" do |s|
+    centos6.vm.provision :shell, :inline => $service_iptables_stop, run: 'always'
+    centos6.vm.provision 'shell' do |s|
       s.inline = $xymon_make_rpm
       s.args   = XYMONVER
     end
-    centos6.vm.provision "shell" do |s|
+    centos6.vm.provision 'shell' do |s|
       s.inline = $xymon_configure_local_rpms_repo
-      s.args   = XYMONVER
+      s.args   = [XYMONVER]
     end
-    centos6.vm.provision :shell, :inline => "yum install -y xymon-client"
-    centos6.vm.provision :shell, :inline => "chkconfig --add xymon-client"
+    centos6.vm.provision :shell, :inline => 'yum install -y xymon-client'
+    centos6.vm.provision :shell, :inline => 'chkconfig --add xymon-client'
     centos6.vm.provision :shell, :inline => "sed -i 's/XYMONSERVERS=.*/XYMONSERVERS=\"bbserver\"/' /etc/default/xymon-client"
-    centos6.vm.provision :shell, :inline => "service xymon-client start"
-    centos6.vm.provision :shell, :inline => "chkconfig xymon-client on"
+    centos6.vm.provision :shell, :inline => 'service xymon-client start'
+    centos6.vm.provision :shell, :inline => 'chkconfig xymon-client on'
   end
-  config.vm.define "centos7" do |centos7|
-    centos7.vm.provision :shell, :inline => "hostname centos7", run: "always"
+  config.vm.define 'centos7' do |centos7|
+    centos7.vm.provision :shell, :inline => 'hostname centos7', run: 'always'
     centos7.vm.provision :shell, :inline => $etc_hosts
     centos7.vm.provision :shell, :inline => $epel7
-    centos7.vm.provision :shell, :inline => $systemctl_stop_firewalld, run: "always"
-    centos7.vm.provision "shell" do |s|
+    centos7.vm.provision :shell, :inline => $systemctl_stop_firewalld, run: 'always'
+    centos7.vm.provision 'shell' do |s|
       s.inline = $xymon_make_rpm
-      s.args   = XYMONVER
+      s.args   = [XYMONVER]
     end
-    centos7.vm.provision "shell" do |s|
+    centos7.vm.provision 'shell' do |s|
       s.inline = $xymon_configure_local_rpms_repo
-      s.args   = XYMONVER
+      s.args   = [XYMONVER]
     end
-    centos7.vm.provision :shell, :inline => "yum install -y xymon-client"
-    centos7.vm.provision :shell, :inline => "chkconfig --add xymon-client"
+    centos7.vm.provision :shell, :inline => 'yum install -y xymon-client'
+    centos7.vm.provision :shell, :inline => 'chkconfig --add xymon-client'
     centos7.vm.provision :shell, :inline => "sed -i 's/XYMONSERVERS=.*/XYMONSERVERS=\"bbserver\"/' /etc/default/xymon-client"
-    centos7.vm.provision :shell, :inline => "service xymon-client start"
-    centos7.vm.provision :shell, :inline => "chkconfig xymon-client on"
+    centos7.vm.provision :shell, :inline => 'service xymon-client start'
+    centos7.vm.provision :shell, :inline => 'chkconfig xymon-client on'
   end
-  config.vm.define "ubuntu14" do |ubuntu14|
-    ubuntu14.vm.provision :shell, :inline => "hostname ubuntu14", run: "always"
+  config.vm.define 'ubuntu14' do |ubuntu14|
+    ubuntu14.vm.provision :shell, :inline => 'hostname ubuntu14', run: 'always'
     ubuntu14.vm.provision :shell, :inline => $etc_hosts
-    ubuntu14.vm.provision "shell" do |s|
+    ubuntu14.vm.provision 'shell' do |s|
       s.inline = $xymon_build_deb
-      s.args   = XYMONVER
+      s.args   = [XYMONVER]
     end
-    ubuntu14.vm.provision "shell" do |s|
+    ubuntu14.vm.provision 'shell' do |s|
       s.inline = $xymon_configure_local_deb_repo
-      s.args   = XYMONVER
+      s.args   = [XYMONVER]
     end
-    ubuntu14.vm.provision :shell, :inline => "DEBIAN_FRONTEND=noninteractive apt-get install -y --force-yes xymon-client"
+    ubuntu14.vm.provision :shell, :inline => 'DEBIAN_FRONTEND=noninteractive apt-get install -y --force-yes xymon-client'
     # FIXME: http://comments.gmane.org/gmane.comp.monitoring.hobbit/30534
     ubuntu14.vm.provision :shell, :inline => "wget 'http://sourceforge.net/p/xymon/code/HEAD/tree/trunk/debian/xymon-client.init?format=raw' -O /etc/init.d/xymon-client"
-    ubuntu14.vm.provision :shell, :inline => "chmod 755 /etc/init.d/xymon-client"
+    ubuntu14.vm.provision :shell, :inline => 'chmod 755 /etc/init.d/xymon-client'
     ubuntu14.vm.provision :shell, :inline => "sed -i 's/XYMONSERVERS=.*/XYMONSERVERS=\"bbserver\"/' /etc/default/xymon-client"
     ubuntu14.vm.provision :shell, :inline => "sed -i 's/XYMSRV=.*/XYMSRV=\"bbserver\"/' /usr/lib/xymon/client/etc/xymonclient.cfg"
-    ubuntu14.vm.provision :shell, :inline => "service xymon-client start"
-    ubuntu14.vm.provision :shell, :inline => "update-rc.d xymon-client defaults"
+    ubuntu14.vm.provision :shell, :inline => 'service xymon-client start'
+    ubuntu14.vm.provision :shell, :inline => 'update-rc.d xymon-client defaults'
   end
-  config.vm.define "windows" do |windows|
+  config.vm.define 'windows' do |windows|
     windows.vm.provision :shell, :inline => "(new-object System.Net.WebClient).DownloadFile('http://downloads.sourceforge.net/project/bbwin/bbwin/0.13/BBWin_0.13.msi','c:\\users\\vagrant\\BBWin_0.13.msi')"
     windows.vm.provision :shell, :inline => "cmd /c 'msiexec /i c:\\users\\vagrant\\BBWin_0.13.msi /quiet'"
     # monitor host-specific data with BBwin
     # https://puppetmon.googlecode.com/git/clients/windows/xymon32/Doc/en/ServiceConfiguration.htm
     windows.vm.provision :shell, :inline => "(Get-Content 'c:\\Program Files (x86)\\BBWin\\etc\\BBWin.cfg') -replace 'yourfirstbbdisplay', '192.168.0.5' | Set-Content 'c:\\Program Files (x86)\\BBWin\\etc\\BBWin.cfg'"
-    windows.vm.provision :shell, :inline => "Set-Service BBWin -StartupType Automatic"
-    windows.vm.provision :shell, :inline => "Rename-Computer -NewName windows -Restart"
-    windows.vm.provision :shell, :inline => "Get-WmiObject Win32_ComputerSystem"
-    windows.vm.provision :shell, :inline => "NetSh Advfirewall set allprofiles state off"
+    windows.vm.provision :shell, :inline => 'Set-Service BBWin -StartupType Automatic'
+    windows.vm.provision :shell, :inline => 'Rename-Computer -NewName windows -Restart -Force'
+    windows.vm.provision :shell, :inline => 'Get-WmiObject Win32_ComputerSystem'
+    windows.vm.provision :shell, :inline => 'NetSh Advfirewall set allprofiles state off'
   end
   # last provision bbserver
-  config.vm.define "bbserver" do |bbserver|
-    bbserver.vm.provision :shell, :inline => "hostname bbserver", run: "always"
+  config.vm.define 'bbserver' do |bbserver|
+    bbserver.vm.provision :shell, :inline => 'hostname bbserver', run: 'always'
     bbserver.vm.provision :shell, :inline => $etc_hosts
     bbserver.vm.provision :shell, :inline => $epel6
-    bbserver.vm.provision :shell, :inline => $linux_disable_ipv6, run: "always"
-    bbserver.vm.provision :shell, :inline => $service_iptables_stop, run: "always"
-    bbserver.vm.provision "shell" do |s|
+    bbserver.vm.provision :shell, :inline => $linux_disable_ipv6, run: 'always'
+    bbserver.vm.provision :shell, :inline => $service_iptables_stop, run: 'always'
+    bbserver.vm.provision 'shell' do |s|
       s.inline = $xymon_make_rpm
-      s.args   = XYMONVER
+      s.args   = [XYMONVER]
     end
-    bbserver.vm.provision "shell" do |s|
+    bbserver.vm.provision 'shell' do |s|
       s.inline = $xymon_configure_local_rpms_repo
-      s.args   = XYMONVER
+      s.args   = [XYMONVER]
     end
-    bbserver.vm.provision :shell, :inline => "yum install -y httpd mod_ssl"
-    bbserver.vm.provision :shell, :inline => "yum install -y xymon"
+    bbserver.vm.provision :shell, :inline => 'yum install -y httpd mod_ssl'
+    bbserver.vm.provision :shell, :inline => 'yum install -y xymon'
     # configure xymon for https with augeas
     # for http - comment out the steps below and forward port 80 to the Vagrant host
-    bbserver.vm.provision :shell, :inline => "yum install -y augeas"
-    bbserver.vm.provision :shell, :inline => "htpasswd -b -c /etc/xymon/xymonpasswd Xymon Xymon"
-    bbserver.vm.provision :shell, :inline => "chown apache.apache /etc/xymon/xymonpasswd"
-    bbserver.vm.provision :shell, :inline => "chmod 700 /etc/xymon/xymonpasswd"
-    bbserver.vm.provision :shell, :inline => "iptables -A INPUT -m state --state NEW -m tcp -p tcp --dport 80 -j REJECT"
+    bbserver.vm.provision :shell, :inline => 'yum install -y augeas'
+    bbserver.vm.provision :shell, :inline => 'htpasswd -b -c /etc/xymon/xymonpasswd Xymon Xymon'
+    bbserver.vm.provision :shell, :inline => 'chown apache.apache /etc/xymon/xymonpasswd'
+    bbserver.vm.provision :shell, :inline => 'chmod 700 /etc/xymon/xymonpasswd'
+    bbserver.vm.provision :shell, :inline => 'iptables -A INPUT -m state --state NEW -m tcp -p tcp --dport 80 -j REJECT'
     bbserver.vm.provision :shell, :inline => $xymon_https_configure
     # end of: configure xymon for https with augeas
-    bbserver.vm.provision :shell, :inline => "chkconfig --add xymon"
+    bbserver.vm.provision :shell, :inline => 'chkconfig --add xymon'
     bbserver.vm.provision :shell, :inline => "echo '192.168.0.10   centos6      # ssh http://centos6' >> /etc/xymon/hosts.cfg"
     bbserver.vm.provision :shell, :inline => "echo '192.168.0.20   centos7      # ssh' >> /etc/xymon/hosts.cfg"
     bbserver.vm.provision :shell, :inline => "echo '192.168.0.30   ubuntu14      # ssh' >> /etc/xymon/hosts.cfg"
     bbserver.vm.provision :shell, :inline => "echo '192.168.0.40   windows      # ssh' >> /etc/xymon/hosts.cfg"
-    bbserver.vm.provision :shell, :inline => "service xymon start"
-    bbserver.vm.provision :shell, :inline => "chkconfig xymon on"
-    bbserver.vm.provision :shell, :inline => "service httpd start"
-    bbserver.vm.provision :shell, :inline => "chkconfig httpd on"
+    bbserver.vm.provision :shell, :inline => 'service xymon start'
+    bbserver.vm.provision :shell, :inline => 'chkconfig xymon on'
+    bbserver.vm.provision :shell, :inline => 'service httpd start'
+    bbserver.vm.provision :shell, :inline => 'chkconfig httpd on'
   end
 end

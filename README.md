@@ -43,6 +43,7 @@ to obtain the "HTTP/1.1 200 OK" status, do::
 
         $ vagrant ssh centos6 -c "sudo su -c 'touch /var/www/html/index.html'"
         $ vagrant ssh centos6 -c "sudo su -c 'chown apache.apache /var/www/html/index.html'"
+        $ vagrant ssh centos6 -c "sudo su -c 'rm -f /var/lock/subsys/httpd'"
         $ vagrant ssh centos6 -c "sudo su -c 'service httpd reload'"
 
 When done, destroy the test machines with::
